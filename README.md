@@ -2,7 +2,7 @@
 
 > Dashboard que transforma dados do GitHub em indicadores de entrega — lead time, throughput, burndown e métricas DORA — para times que querem decidir com dados, não com achismo.
 
-![status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow) ![python](https://img.shields.io/badge/python-3.12-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
+[![CI](https://github.com/rafantavares/painel-metricas-entrega/actions/workflows/ci.yml/badge.svg)](https://github.com/rafantavares/painel-metricas-entrega/actions/workflows/ci.yml) ![status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow) ![python](https://img.shields.io/badge/python-3.12-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 ## Por que este projeto existe
 
@@ -79,6 +79,8 @@ ruff check .           # lint
 ruff format --check .  # formatação
 pytest                 # testes
 ```
+
+Os mesmos comandos rodam no [CI](.github/workflows/ci.yml) a cada push na `main` e em todo pull request.
 
 > O coletor (`python -m painel.coletar`) e o dashboard (`streamlit run app/painel.py`) chegam nos próximos milestones.
 
