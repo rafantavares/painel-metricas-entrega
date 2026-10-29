@@ -72,6 +72,19 @@ cp .env.example .env   # informe GITHUB_TOKEN e os repositórios a analisar
 
 As variáveis aceitas estão documentadas em [`.env.example`](.env.example).
 
+### Coletar os dados
+
+```bash
+python -m painel.coletar
+```
+
+O coletor lê issues e pull requests de cada repositório em `PAINEL_REPOSITORIOS` e grava no arquivo DuckDB indicado em `PAINEL_BANCO` (padrão `data/painel.duckdb`):
+
+- `bruta_itens`: uma linha por issue/PR, com datas de criação, atualização, fechamento e merge, labels e milestone;
+- `controle_coleta`: até onde cada repositório já foi coletado.
+
+A coleta é incremental: a partir da segunda execução, só busca o que mudou desde a anterior. Quando a API devolve rate limit, o coletor espera e tenta de novo. Os detalhes estão no [ADR 0002](docs/adr/0002-coleta-incremental.md).
+
 ### Verificações de qualidade
 
 ```bash
@@ -82,7 +95,7 @@ pytest                 # testes
 
 Os mesmos comandos rodam no [CI](.github/workflows/ci.yml) a cada push na `main` e em todo pull request.
 
-> O coletor (`python -m painel.coletar`) e o dashboard (`streamlit run app/painel.py`) chegam nos próximos milestones.
+> O dashboard (`streamlit run app/painel.py`) chega no milestone M4.
 
 ## Gestão do projeto
 
