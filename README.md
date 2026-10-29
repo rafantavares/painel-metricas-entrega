@@ -58,17 +58,29 @@ Python 3.12 · httpx · DuckDB · pandas · Streamlit · Plotly · pytest · Ruf
 
 O detalhamento está nas [issues](../../issues) e no [board do projeto](../../projects).
 
-## Como rodar (em construção)
+## Como rodar
+
+Pré-requisito: Python 3.12 ou superior.
 
 ```bash
 git clone https://github.com/rafantavares/painel-metricas-entrega
 cd painel-metricas-entrega
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate   # no Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 cp .env.example .env   # informe GITHUB_TOKEN e os repositórios a analisar
-python -m painel.coletar
-streamlit run app/painel.py
 ```
+
+As variáveis aceitas estão documentadas em [`.env.example`](.env.example).
+
+### Verificações de qualidade
+
+```bash
+ruff check .           # lint
+ruff format --check .  # formatação
+pytest                 # testes
+```
+
+> O coletor (`python -m painel.coletar`) e o dashboard (`streamlit run app/painel.py`) chegam nos próximos milestones.
 
 ## Gestão do projeto
 
