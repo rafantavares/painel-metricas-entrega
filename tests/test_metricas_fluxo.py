@@ -2,7 +2,6 @@ from datetime import date, datetime
 
 import pytest
 
-from painel.coleta.normalizacao import Item
 from painel.metricas.fluxo import (
     ContagemSemanal,
     concluido_em,
@@ -13,59 +12,35 @@ from painel.metricas.fluxo import (
     throughput_semanal,
 )
 
-
-def item(
-    numero: int = 1,
-    *,
-    criado: datetime = datetime(2026, 10, 1),
-    fechado: datetime | None = None,
-    mesclado: datetime | None = None,
-    estado: str | None = None,
-    tipo: str = "issue",
-) -> Item:
-    """Item mínimo para as métricas; o estado acompanha `fechado` se não for informado."""
-    return Item(
-        repositorio="dono/repo",
-        numero=numero,
-        tipo=tipo,
-        titulo=f"Item {numero}",
-        estado=estado or ("closed" if fechado else "open"),
-        criado_em=criado,
-        atualizado_em=fechado or criado,
-        fechado_em=fechado,
-        mesclado_em=mesclado,
-        labels=(),
-        milestone=None,
-    )
-
-
 # --- concluido_em -----------------------------------------------------------------------
 
 
-def test_issue_fechada_conclui_no_fechamento():
-    assert concluido_em(item(fechado=datetime(2026, 10, 3))) == datetime(2026, 10, 3)
+def test_issue_fechada_conclui_no_fechamento(novo_item):
+    assert concluido_em(novo_item(fechado=datetime(2026, 10, 3))) == datetime(2026, 10, 3)
 
 
-def test_pr_conclui_no_merge():
-    pr = item(tipo="pull_request", fechado=datetime(2026, 10, 3), mesclado=datetime(2026, 10, 3))
+def test_pr_conclui_no_merge(novo_item):
+    pr = novo_item(
+        tipo="pull_request", fechado=datetime(2026, 10, 3), mesclado=datetime(2026, 10, 3)
+    )
     assert concluido_em(pr) == datetime(2026, 10, 3)
 
 
-def test_pr_fechado_sem_merge_nao_e_entrega():
-    assert concluido_em(item(tipo="pull_request", fechado=datetime(2026, 10, 3))) is None
+def test_pr_fechado_sem_merge_nao_e_entrega(novo_item):
+    assert concluido_em(novo_item(tipo="pull_request", fechado=datetime(2026, 10, 3))) is None
 
 
-def test_item_sem_data_de_fechamento_nao_e_entrega():
-    assert concluido_em(item()) is None
+def test_item_sem_data_de_fechamento_nao_e_entrega(novo_item):
+    assert concluido_em(novo_item()) is None
 
 
-def test_item_reaberto_nao_e_entrega_mesmo_com_fechamento_antigo():
-    reaberto = item(fechado=datetime(2026, 10, 3), estado="open")
+def test_item_reaberto_nao_e_entrega_mesmo_com_fechamento_antigo(novo_item):
+    reaberto = novo_item(fechado=datetime(2026, 10, 3), estado="open")
     assert concluido_em(reaberto) is None
 
 
-def test_item_fechado_sem_data_e_ignorado():
-    assert concluido_em(item(estado="closed")) is None
+def test_item_fechado_sem_data_e_ignorado(novo_item):
+    assert concluido_em(novo_item(estado="closed")) is None
 
 
 # --- percentil --------------------------------------------------------------------------
@@ -103,11 +78,11 @@ def test_inicio_da_semana_e_segunda_feira():
     assert inicio_da_semana(date(2026, 11, 1)) == date(2026, 10, 26)  # domingo
 
 
-def test_throughput_agrupa_por_semana_e_preenche_semanas_vazias():
+def test_throughput_agrupa_por_semana_e_preenche_semanas_vazias(novo_item):
     itens = [
-        item(1, fechado=datetime(2026, 10, 5, 9)),  # semana de 05/10
-        item(2, fechado=datetime(2026, 10, 11, 23, 59)),  # domingo, mesma semana
-        item(3, fechado=datetime(2026, 10, 21)),  # semana de 19/10
+        novo_item(1, fechado=datetime(2026, 10, 5, 9)),  # semana de 05/10
+        novo_item(2, fechado=datetime(2026, 10, 11, 23, 59)),  # domingo, mesma semana
+        novo_item(3, fechado=datetime(2026, 10, 21)),  # semana de 19/10
     ]
 
     assert throughput_semanal(itens) == [
@@ -117,21 +92,21 @@ def test_throughput_agrupa_por_semana_e_preenche_semanas_vazias():
     ]
 
 
-def test_throughput_ignora_abertos_reabertos_e_prs_sem_merge():
+def test_throughput_ignora_abertos_reabertos_e_prs_sem_merge(novo_item):
     itens = [
-        item(1, fechado=datetime(2026, 10, 5)),
-        item(2),  # aberto, sem data de fechamento
-        item(3, fechado=datetime(2026, 10, 5), estado="open"),  # reaberto
-        item(4, tipo="pull_request", fechado=datetime(2026, 10, 5)),  # sem merge
+        novo_item(1, fechado=datetime(2026, 10, 5)),
+        novo_item(2),  # aberto, sem data de fechamento
+        novo_item(3, fechado=datetime(2026, 10, 5), estado="open"),  # reaberto
+        novo_item(4, tipo="pull_request", fechado=datetime(2026, 10, 5)),  # sem merge
     ]
 
     assert throughput_semanal(itens) == [ContagemSemanal(date(2026, 10, 5), 1)]
 
 
-def test_throughput_respeita_o_periodo_e_mostra_semanas_sem_entrega():
+def test_throughput_respeita_o_periodo_e_mostra_semanas_sem_entrega(novo_item):
     itens = [
-        item(1, fechado=datetime(2026, 9, 30)),  # antes do período
-        item(2, fechado=datetime(2026, 10, 14)),
+        novo_item(1, fechado=datetime(2026, 9, 30)),  # antes do período
+        novo_item(2, fechado=datetime(2026, 10, 14)),
     ]
 
     resultado = throughput_semanal(itens, inicio=date(2026, 10, 5), fim=date(2026, 10, 25))
@@ -143,10 +118,12 @@ def test_throughput_respeita_o_periodo_e_mostra_semanas_sem_entrega():
     ]
 
 
-def test_throughput_filtra_por_tipo():
+def test_throughput_filtra_por_tipo(novo_item):
     itens = [
-        item(1, fechado=datetime(2026, 10, 5)),
-        item(2, tipo="pull_request", fechado=datetime(2026, 10, 5), mesclado=datetime(2026, 10, 5)),
+        novo_item(1, fechado=datetime(2026, 10, 5)),
+        novo_item(
+            2, tipo="pull_request", fechado=datetime(2026, 10, 5), mesclado=datetime(2026, 10, 5)
+        ),
     ]
 
     assert throughput_semanal(itens, tipo="pull_request") == [ContagemSemanal(date(2026, 10, 5), 1)]
@@ -164,10 +141,10 @@ def test_throughput_sem_itens_com_periodo_retorna_semanas_zeradas():
 # --- cycle time -------------------------------------------------------------------------
 
 
-def test_cycle_time_em_dias_da_criacao_a_conclusao():
+def test_cycle_time_em_dias_da_criacao_a_conclusao(novo_item):
     itens = [
-        item(1, criado=datetime(2026, 10, 1), fechado=datetime(2026, 10, 2, 12)),  # 1,5 dia
-        item(
+        novo_item(1, criado=datetime(2026, 10, 1), fechado=datetime(2026, 10, 2, 12)),  # 1,5 dia
+        novo_item(
             2,
             tipo="pull_request",
             criado=datetime(2026, 10, 1),
@@ -179,9 +156,9 @@ def test_cycle_time_em_dias_da_criacao_a_conclusao():
     assert duracoes_cycle_time(itens) == pytest.approx([1.5, 2.0])
 
 
-def test_cycle_time_mediana_e_p85():
+def test_cycle_time_mediana_e_p85(novo_item):
     itens = [
-        item(n, criado=datetime(2026, 10, 1), fechado=datetime(2026, 10, 1 + dias))
+        novo_item(n, criado=datetime(2026, 10, 1), fechado=datetime(2026, 10, 1 + dias))
         for n, dias in enumerate([1, 2, 3, 4, 10], start=1)
     ]
 
@@ -192,12 +169,12 @@ def test_cycle_time_mediana_e_p85():
     assert resumo.p85_dias == pytest.approx(6.4)  # 4 + 0,4 × (10 − 4)
 
 
-def test_cycle_time_ignora_itens_nao_concluidos():
+def test_cycle_time_ignora_itens_nao_concluidos(novo_item):
     itens = [
-        item(1, criado=datetime(2026, 10, 1), fechado=datetime(2026, 10, 3)),
-        item(2),
-        item(3, fechado=datetime(2026, 10, 20), estado="open"),
-        item(4, tipo="pull_request", fechado=datetime(2026, 10, 20)),
+        novo_item(1, criado=datetime(2026, 10, 1), fechado=datetime(2026, 10, 3)),
+        novo_item(2),
+        novo_item(3, fechado=datetime(2026, 10, 20), estado="open"),
+        novo_item(4, tipo="pull_request", fechado=datetime(2026, 10, 20)),
     ]
 
     resumo = cycle_time(itens)
@@ -206,10 +183,10 @@ def test_cycle_time_ignora_itens_nao_concluidos():
     assert resumo.mediana_dias == pytest.approx(2.0)
 
 
-def test_cycle_time_filtra_pelo_periodo_de_conclusao():
+def test_cycle_time_filtra_pelo_periodo_de_conclusao(novo_item):
     itens = [
-        item(1, criado=datetime(2026, 9, 1), fechado=datetime(2026, 9, 30)),
-        item(2, criado=datetime(2026, 10, 1), fechado=datetime(2026, 10, 2)),
+        novo_item(1, criado=datetime(2026, 9, 1), fechado=datetime(2026, 9, 30)),
+        novo_item(2, criado=datetime(2026, 10, 1), fechado=datetime(2026, 10, 2)),
     ]
 
     resumo = cycle_time(itens, inicio=date(2026, 10, 1), fim=date(2026, 10, 31))
@@ -218,7 +195,7 @@ def test_cycle_time_filtra_pelo_periodo_de_conclusao():
     assert resumo.mediana_dias == pytest.approx(1.0)
 
 
-def test_cycle_time_sem_itens():
-    assert cycle_time([]) == cycle_time([item()])
+def test_cycle_time_sem_itens(novo_item):
+    assert cycle_time([]) == cycle_time([novo_item()])
     assert cycle_time([]).mediana_dias is None
     assert cycle_time([]).p85_dias is None
