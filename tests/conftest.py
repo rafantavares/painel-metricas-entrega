@@ -47,19 +47,21 @@ def _novo_item(
     mesclado: datetime | None = None,
     estado: str | None = None,
     tipo: str = "issue",
+    titulo: str | None = None,
+    labels: tuple[str, ...] = (),
 ) -> Item:
     """Item já normalizado; o estado acompanha `fechado` quando não é informado."""
     return Item(
         repositorio="dono/repo",
         numero=numero,
         tipo=tipo,
-        titulo=f"Item {numero}",
+        titulo=titulo or f"Item {numero}",
         estado=estado or ("closed" if fechado else "open"),
         criado_em=criado,
         atualizado_em=fechado or criado,
         fechado_em=fechado,
         mesclado_em=mesclado,
-        labels=(),
+        labels=labels,
         milestone=None,
     )
 
