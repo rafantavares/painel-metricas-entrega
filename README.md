@@ -17,7 +17,7 @@ Este painel coleta esses dados, calcula os indicadores e mostra tendências em u
 | Grupo | Indicador | Pergunta que responde |
 |---|---|---|
 | **DORA** | Frequência de deploy | Com que frequência entregamos em produção? |
-| | Lead time de mudanças | Quanto tempo do primeiro commit ao merge/deploy? |
+| | Lead time de mudanças | Quanto tempo da abertura do PR até ele chegar em produção? |
 | | Taxa de falha de mudanças | Quantas entregas geram correção ou revert? |
 | | Tempo de restauração (MTTR) | Quanto tempo levamos para resolver incidentes? |
 | **Fluxo** | Throughput | Quantos itens concluímos por semana? |
@@ -52,7 +52,7 @@ Python 3.12 · httpx · DuckDB · pandas · Streamlit · Plotly · pytest · Ruf
 |---|---|---|
 | **M1 – Fundação** | Estrutura do projeto, CI, coletor de issues e PRs | ✅ |
 | **M2 – Métricas de fluxo** | Throughput, cycle time, WIP, aging | ✅ |
-| **M3 – DORA** | As quatro métricas DORA a partir de releases/workflows | ⏳ |
+| **M3 – DORA** | As quatro métricas DORA a partir de releases/workflows | ✅ |
 | **M4 – Dashboard** | Painel Streamlit com filtros por repo e período, deploy público | ⏳ |
 | **M5 – Planejamento** | Burndown por milestone, previsibilidade, relatório semanal | ⏳ |
 
