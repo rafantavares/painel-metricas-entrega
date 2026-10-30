@@ -50,7 +50,7 @@ Python 3.12 · httpx · DuckDB · pandas · Streamlit · Plotly · pytest · Ruf
 
 | Milestone | Entrega | Status |
 |---|---|---|
-| **M1 – Fundação** | Estrutura do projeto, CI, coletor de issues e PRs | ⏳ |
+| **M1 – Fundação** | Estrutura do projeto, CI, coletor de issues e PRs | ✅ |
 | **M2 – Métricas de fluxo** | Throughput, cycle time, WIP, aging | ⏳ |
 | **M3 – DORA** | As quatro métricas DORA a partir de releases/workflows | ⏳ |
 | **M4 – Dashboard** | Painel Streamlit com filtros por repo e período, deploy público | ⏳ |
