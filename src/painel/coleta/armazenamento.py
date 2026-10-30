@@ -6,7 +6,7 @@ from pathlib import Path
 
 import duckdb
 
-from painel.coleta.normalizacao import Deploy, Item
+from painel.coleta.normalizacao import Deploy, Item, Milestone
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS bruta_itens (
@@ -31,6 +31,17 @@ CREATE TABLE IF NOT EXISTS bruta_deploys (
     sha            VARCHAR,
     implantado_em  TIMESTAMP NOT NULL,
     PRIMARY KEY (repositorio, regra, identificador)
+);
+
+CREATE TABLE IF NOT EXISTS bruta_milestones (
+    repositorio  VARCHAR   NOT NULL,
+    numero       INTEGER   NOT NULL,
+    titulo       VARCHAR   NOT NULL,
+    estado       VARCHAR   NOT NULL,
+    criado_em    TIMESTAMP NOT NULL,
+    prazo        DATE,
+    fechado_em   TIMESTAMP,
+    PRIMARY KEY (repositorio, numero)
 );
 
 CREATE TABLE IF NOT EXISTS controle_coleta (
@@ -166,3 +177,33 @@ def listar_repositorios(conexao: duckdb.DuckDBPyConnection) -> list[str]:
     """Repositórios que já têm itens coletados, em ordem alfabética."""
     linhas = conexao.execute("SELECT DISTINCT repositorio FROM bruta_itens ORDER BY 1").fetchall()
     return [linha[0] for linha in linhas]
+
+
+def substituir_milestones(
+    conexao: duckdb.DuckDBPyConnection, repositorio: str, milestones: Iterable[Milestone]
+) -> int:
+    """Troca os milestones gravados do repositório pela lista atual.
+
+    Milestones são poucos e podem ser apagados no GitHub, então a coleta é sempre completa.
+    """
+    linhas = [
+        (m.repositorio, m.numero, m.titulo, m.estado, m.criado_em, m.prazo, m.fechado_em)
+        for m in milestones
+    ]
+    conexao.execute("DELETE FROM bruta_milestones WHERE repositorio = ?", [repositorio])
+    if linhas:
+        conexao.executemany("INSERT INTO bruta_milestones VALUES (?, ?, ?, ?, ?, ?, ?)", linhas)
+    return len(linhas)
+
+
+def ler_milestones(
+    conexao: duckdb.DuckDBPyConnection, repositorios: Iterable[str] | None = None
+) -> list[Milestone]:
+    """Milestones gravados, opcionalmente só dos `repositorios` informados."""
+    consulta = "SELECT * FROM bruta_milestones"
+    parametros: list = []
+    if repositorios is not None:
+        consulta += " WHERE list_contains(?, repositorio)"
+        parametros.append(list(repositorios))
+    linhas = conexao.execute(consulta + " ORDER BY repositorio, criado_em", parametros)
+    return [Milestone(*linha) for linha in linhas.fetchall()]

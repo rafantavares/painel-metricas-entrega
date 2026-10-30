@@ -9,8 +9,13 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 import painel.publicacao
-from painel.coleta.armazenamento import conectar, gravar_deploys, gravar_itens
-from painel.coleta.normalizacao import Deploy
+from painel.coleta.armazenamento import (
+    conectar,
+    gravar_deploys,
+    gravar_itens,
+    substituir_milestones,
+)
+from painel.coleta.normalizacao import Deploy, Milestone
 
 APP = str(Path(__file__).parents[1] / "app" / "dashboard.py")
 REPO = "dono/repo"
@@ -26,7 +31,14 @@ def banco(tmp_path, monkeypatch, novo_item):
         criado = agora - timedelta(days=40 - 3 * n)
         mesclado = criado + timedelta(days=1)
         itens.append(
-            novo_item(n, tipo="pull_request", criado=criado, fechado=mesclado, mesclado=mesclado)
+            novo_item(
+                n,
+                tipo="pull_request",
+                criado=criado,
+                fechado=mesclado,
+                mesclado=mesclado,
+                milestone="Sprint 1",
+            )
         )
         deploys.append(Deploy(REPO, "release", f"v{n}", None, mesclado + timedelta(hours=2)))
     itens.append(novo_item(20, criado=agora - timedelta(days=60)))  # aberta e envelhecida
@@ -44,6 +56,16 @@ def banco(tmp_path, monkeypatch, novo_item):
     conexao = conectar(caminho)
     gravar_itens(conexao, itens)
     gravar_deploys(conexao, deploys)
+    sprint = Milestone(
+        REPO,
+        1,
+        "Sprint 1",
+        "open",
+        agora - timedelta(days=45),
+        (agora - timedelta(days=5)).date(),
+        None,
+    )
+    substituir_milestones(conexao, REPO, [sprint])
     conexao.close()
 
     monkeypatch.setenv("PAINEL_BANCO", str(caminho))
@@ -71,11 +93,22 @@ def test_visao_geral_mostra_indicadores_e_dora(banco):
     assert any("DORA" in sub.value for sub in app.subheader)
 
 
-@pytest.mark.parametrize("pagina", ["fluxo", "dora"])
-def test_paginas_abrem_sem_erro(banco, pagina):
+@pytest.mark.parametrize(
+    ("pagina", "titulo"), [("fluxo", "Fluxo"), ("dora", "DORA"), ("planejamento", "Planejamento")]
+)
+def test_paginas_abrem_sem_erro(banco, pagina, titulo):
     app = rodar(pagina)
 
-    assert app.title[0].value.endswith(pagina.upper() if pagina == "dora" else "Fluxo")
+    assert app.title[0].value.endswith(titulo)
+
+
+def test_planejamento_mostra_burndown_e_previsibilidade(banco):
+    app = rodar("planejamento")
+
+    metricas = {metrica.label: metrica.value for metrica in app.metric}
+    assert metricas["Itens no milestone"] == "10"
+    assert metricas["Entregues no prazo"] == "10"
+    assert metricas["Índice de previsibilidade"] == "100%"
 
 
 def test_sem_banco_orienta_a_rodar_o_coletor(tmp_path, monkeypatch):

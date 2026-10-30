@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from painel import visualizacao as vis
-from painel.coleta.normalizacao import Deploy
+from painel.coleta.normalizacao import Deploy, Milestone
 
 
 def deploy(repositorio, momento):
@@ -154,3 +154,67 @@ def test_deploys_semanais_agrupa_por_semana_e_repositorio():
 
 def test_deploys_semanais_vazio():
     assert vis.tabela_deploys_semanais([], date(2026, 10, 1), date(2026, 10, 31)).empty
+
+
+def test_tabela_burndown(novo_item):
+    m = Milestone("dono/repo", 1, "M1", "open", datetime(2026, 10, 1), date(2026, 10, 3), None)
+    itens = [
+        novo_item(1, milestone="M1", criado=datetime(2026, 9, 1), fechado=datetime(2026, 10, 2))
+    ]
+
+    tabela = vis.tabela_burndown(itens, m, hoje=date(2026, 10, 2))
+
+    assert tabela["restantes"].tolist() == [1, 0, pd.NA]
+    assert tabela["ideal"].tolist() == pytest.approx([1.0, 0.5, 0.0])
+
+
+def test_tabela_previsibilidade_inclui_futuros_e_marca_a_situacao(novo_item):
+    milestones = [
+        Milestone("dono/repo", 2, "M2", "open", datetime(2026, 10, 1), date(2026, 11, 20), None),
+        Milestone("dono/repo", 1, "M1", "open", datetime(2026, 9, 1), date(2026, 10, 5), None),
+        Milestone("dono/repo", 3, "Velho", "closed", datetime(2026, 8, 1), date(2026, 8, 30), None),
+        Milestone("dono/repo", 4, "Backlog", "open", datetime(2026, 8, 1), None, None),
+    ]
+    itens = [
+        novo_item(1, milestone="M1", fechado=datetime(2026, 10, 4)),
+        novo_item(2, milestone="M1"),
+        novo_item(3, milestone="M2", fechado=datetime(2026, 10, 25)),
+    ]
+
+    tabela = vis.tabela_previsibilidade(itens, milestones, date(2026, 10, 1), date(2026, 10, 31))
+
+    assert tabela["milestone"].tolist() == ["M1", "M2"]  # sem "Velho" e sem "Backlog"
+    assert tabela["situacao"].tolist() == ["prazo encerrado", "em andamento"]
+    assert tabela["planejados"].tolist() == [2, 1]
+    assert tabela["entregues_no_prazo"].tolist() == [1, 1]
+    assert vis.indice_dos_encerrados(tabela) == pytest.approx(0.5)  # só o M1 conta
+
+
+def test_tabela_previsibilidade_vazia():
+    tabela = vis.tabela_previsibilidade([], [], date(2026, 10, 1), date(2026, 10, 31))
+
+    assert tabela.empty
+    assert vis.indice_dos_encerrados(tabela) is None
+
+
+def test_ordenar_milestones_abertos_pelo_prazo_mais_proximo():
+    def m(titulo, estado, prazo):
+        return Milestone("dono/repo", 0, titulo, estado, datetime(2026, 10, 1), prazo, None)
+
+    milestones = [
+        m("Sem prazo", "open", None),
+        m("M3", "open", date(2026, 12, 1)),
+        m("Fechado antigo", "closed", date(2026, 8, 1)),
+        m("M2", "open", date(2026, 11, 8)),
+        m("Fechado recente", "closed", date(2026, 10, 1)),
+        m("Fechado sem prazo", "closed", None),
+    ]
+
+    assert [x.titulo for x in vis.ordenar_milestones(milestones)] == [
+        "M2",
+        "M3",
+        "Sem prazo",
+        "Fechado recente",
+        "Fechado antigo",
+        "Fechado sem prazo",
+    ]

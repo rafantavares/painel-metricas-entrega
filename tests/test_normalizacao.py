@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 import pytest
 
@@ -6,6 +6,7 @@ from painel.coleta.normalizacao import (
     converter_data,
     normalizar_execucao_workflow,
     normalizar_item,
+    normalizar_milestone,
     normalizar_release,
     normalizar_tag,
     tag_casa_com_padrao,
@@ -131,3 +132,37 @@ def test_execucao_sem_sucesso_e_ignorada(conclusao):
     dados = {"id": 42, "conclusion": conclusao, "updated_at": "2026-10-12T10:07:00Z"}
 
     assert normalizar_execucao_workflow("dono/repo", "workflow:x.yml@main", dados) is None
+
+
+def test_milestone_com_prazo_e_fechamento():
+    dados = {
+        "number": 3,
+        "title": "M1 – Fundação",
+        "state": "closed",
+        "created_at": "2026-10-29T21:55:08Z",
+        "due_on": "2026-11-08T07:00:00Z",
+        "closed_at": "2026-11-07T18:00:00Z",
+    }
+
+    milestone = normalizar_milestone("dono/repo", dados)
+
+    assert milestone.numero == 3
+    assert milestone.titulo == "M1 – Fundação"
+    assert milestone.prazo == date(2026, 11, 8)
+    assert milestone.fechado_em == datetime(2026, 11, 7, 18)
+
+
+def test_milestone_sem_prazo():
+    dados = {
+        "number": 1,
+        "title": "Backlog",
+        "state": "open",
+        "created_at": "2026-10-29T21:55:08Z",
+        "due_on": None,
+        "closed_at": None,
+    }
+
+    milestone = normalizar_milestone("dono/repo", dados)
+
+    assert milestone.prazo is None
+    assert milestone.fechado_em is None

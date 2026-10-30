@@ -8,12 +8,13 @@ from painel.coleta.armazenamento import (
     gravar_deploys,
     ler_deploys,
     ler_itens,
+    ler_milestones,
     ler_ultima_atualizacao,
     listar_repositorios,
 )
 from painel.coleta.github import ClienteGitHub
 from painel.coleta.normalizacao import Deploy
-from painel.coletar import coletar_repositorio
+from painel.coletar import coletar_milestones, coletar_repositorio
 
 REPO = "dono/repo"
 
@@ -148,3 +149,39 @@ def test_leitura_dos_itens_e_deploys_gravados(conexao, item_api):
     assert len(ler_itens(conexao)) == 4
     assert [d.identificador for d in ler_deploys(conexao, ["dono/um"])] == ["v1"]
     assert ler_deploys(conexao, ["dono/dois"]) == []
+
+
+def test_milestones_sao_substituidos_a_cada_coleta(conexao):
+    milestones = [
+        {
+            "number": 1,
+            "title": "M1",
+            "state": "closed",
+            "created_at": "2026-10-01T00:00:00Z",
+            "due_on": "2026-10-10T07:00:00Z",
+            "closed_at": "2026-10-09T00:00:00Z",
+        },
+        {
+            "number": 2,
+            "title": "M2",
+            "state": "open",
+            "created_at": "2026-10-10T00:00:00Z",
+            "due_on": None,
+            "closed_at": None,
+        },
+    ]
+    caminhos = []
+
+    def tratador(requisicao):
+        caminhos.append((requisicao.url.path, dict(requisicao.url.params)))
+        return httpx.Response(200, json=milestones)
+
+    cliente = ClienteGitHub(transporte=httpx.MockTransport(tratador))
+    assert coletar_milestones(cliente, conexao, REPO) == 2
+
+    milestones.pop(0)  # M1 foi apagado no GitHub
+    coletar_milestones(cliente, conexao, REPO)
+
+    assert caminhos[0] == ("/repos/dono/repo/milestones", {"state": "all", "per_page": "100"})
+    assert [(m.titulo, m.prazo) for m in ler_milestones(conexao)] == [("M2", None)]
+    assert ler_milestones(conexao, ["dono/outro"]) == []

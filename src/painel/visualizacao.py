@@ -11,7 +11,7 @@ from datetime import date, datetime
 
 import pandas as pd
 
-from painel.coleta.normalizacao import Deploy, Item
+from painel.coleta.normalizacao import Deploy, Item, Milestone
 from painel.metricas import dora
 from painel.metricas.fluxo import (
     SEGUNDOS_POR_DIA,
@@ -20,6 +20,7 @@ from painel.metricas.fluxo import (
     inicio_da_semana,
     throughput_semanal,
 )
+from painel.metricas.planejamento import burndown, previsibilidade
 from painel.metricas.wip import itens_envelhecidos, wip_diario
 
 TIPOS = {"Todos": None, "Issues": "issue", "Pull requests": "pull_request"}
@@ -207,3 +208,62 @@ def tabela_deploys_semanais(deploys: Iterable[Deploy], inicio: date, fim: date) 
         for repositorio in repositorios
     ]
     return pd.DataFrame(linhas, columns=["semana", "repositorio", "deploys"])
+
+
+def ordenar_milestones(milestones: Iterable[Milestone]) -> list[Milestone]:
+    """Abertos primeiro, do prazo mais próximo ao mais distante; depois os fechados,
+    do mais recente ao mais antigo. Milestones sem prazo vão para o fim de cada grupo.
+    """
+    abertos = [m for m in milestones if m.estado == "open"]
+    fechados = [m for m in milestones if m.estado != "open"]
+    abertos.sort(key=lambda m: (m.prazo is None, m.prazo or date.max, m.titulo))
+    fechados.sort(key=lambda m: (m.prazo is not None, m.prazo or date.min), reverse=True)
+    return abertos + fechados
+
+
+def tabela_burndown(itens: Iterable[Item], milestone: Milestone, hoje: date) -> pd.DataFrame:
+    """Itens restantes e linha ideal por dia do milestone."""
+    pontos = burndown(itens, milestone, hoje)
+    return pd.DataFrame(
+        {
+            "dia": [p.dia for p in pontos],
+            "restantes": pd.array([p.restantes for p in pontos], dtype="Int64"),
+            "ideal": pd.array([p.ideal for p in pontos], dtype="Float64"),
+        }
+    )
+
+
+def tabela_previsibilidade(
+    itens: Sequence[Item], milestones: Iterable[Milestone], inicio: date, hoje: date
+) -> pd.DataFrame:
+    """Uma linha por milestone com prazo a partir de `inicio`, do prazo mais antigo ao mais novo.
+
+    Inclui milestones com prazo futuro, marcados como "em andamento": para eles o
+    percentual mostra o que já foi entregue, mas ainda não vale para o índice.
+    """
+    colunas = [
+        "repositorio",
+        "milestone",
+        "prazo",
+        "situacao",
+        "planejados",
+        "entregues_no_prazo",
+        "percentual",
+    ]
+    linhas = [
+        resumo.__dict__ | {"situacao": "prazo encerrado" if m.prazo < hoje else "em andamento"}
+        for m in milestones
+        if m.prazo is not None
+        and m.prazo >= inicio
+        and (resumo := previsibilidade(itens, m)) is not None
+    ]
+    tabela = pd.DataFrame(linhas, columns=colunas).sort_values(["prazo", "repositorio"])
+    tabela["percentual"] = tabela["percentual"].astype(float)
+    return tabela.reset_index(drop=True)
+
+
+def indice_dos_encerrados(tabela: pd.DataFrame) -> float | None:
+    """Índice de previsibilidade só dos milestones com prazo encerrado."""
+    encerrados = tabela[tabela["situacao"] == "prazo encerrado"]
+    planejados = encerrados["planejados"].sum()
+    return encerrados["entregues_no_prazo"].sum() / planejados if planejados else None

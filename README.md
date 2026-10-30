@@ -82,6 +82,7 @@ O coletor lê issues e pull requests de cada repositório em `PAINEL_REPOSITORIO
 
 - `bruta_itens`: uma linha por issue/PR, com datas de criação, atualização, fechamento e merge, labels e milestone;
 - `bruta_deploys`: os deploys de cada repositório, identificados pela regra configurada;
+- `bruta_milestones`: título, prazo e datas de cada milestone;
 - `controle_coleta`: até onde cada repositório já foi coletado.
 
 **O que conta como deploy** é configurável por repositório em `PAINEL_REGRAS_DEPLOY`: release publicada (padrão), tag com um padrão de nome (`tag:v*`) ou execução bem-sucedida de um workflow (`workflow:deploy.yml@main`). Os critérios estão no [ADR 0004](docs/adr/0004-regra-de-deploy.md).
@@ -104,11 +105,12 @@ Os mesmos comandos rodam no [CI](.github/workflows/ci.yml) a cada push na `main`
 streamlit run app/dashboard.py
 ```
 
-O painel lê o mesmo arquivo DuckDB do coletor e tem três páginas:
+O painel lê o mesmo arquivo DuckDB do coletor e tem quatro páginas:
 
 - **Visão geral**: itens concluídos, throughput, cycle time, WIP, itens envelhecidos e o resumo DORA por repositório;
 - **Fluxo**: throughput semanal, distribuição do cycle time, WIP diário e lista de itens envelhecidos;
-- **DORA**: as quatro métricas por repositório, com a classificação de desempenho e os deploys por semana.
+- **DORA**: as quatro métricas por repositório, com a classificação de desempenho e os deploys por semana;
+- **Planejamento**: burndown de cada milestone e índice de previsibilidade, ou seja, quanto do planejado foi entregue no prazo ([ADR 0007](docs/adr/0007-burndown-e-previsibilidade.md)).
 
 Os filtros ficam na barra lateral (repositórios, período e tipo de item), e cada tabela pode ser exportada em CSV.
 

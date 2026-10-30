@@ -8,7 +8,7 @@ import plotly.express as px
 import streamlit as st
 from plotly.graph_objects import Figure
 
-from painel.coleta.normalizacao import Deploy, Item
+from painel.coleta.normalizacao import Deploy, Item, Milestone
 
 URL_ADRS = "https://github.com/rafantavares/painel-metricas-entrega/tree/main/docs/adr"
 
@@ -24,6 +24,7 @@ class Contexto:
     agora: datetime
     itens: list[Item]
     deploys: list[Deploy]
+    milestones: list[Milestone]
 
 
 def definir_contexto(contexto: Contexto) -> None:

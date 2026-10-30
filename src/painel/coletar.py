@@ -10,10 +10,11 @@ from painel.coleta.armazenamento import (
     gravar_itens,
     ler_ultima_atualizacao,
     registrar_coleta,
+    substituir_milestones,
 )
 from painel.coleta.deploys import coletar_deploys
 from painel.coleta.github import ClienteGitHub
-from painel.coleta.normalizacao import normalizar_item
+from painel.coleta.normalizacao import normalizar_item, normalizar_milestone
 from painel.config import carregar_configuracao
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,23 @@ def coletar_repositorio(
     return gravados
 
 
+def coletar_milestones(
+    cliente: ClienteGitHub, conexao: duckdb.DuckDBPyConnection, repositorio: str
+) -> int:
+    """Coleta todos os milestones do repositório, substituindo os gravados."""
+    milestones = [
+        normalizar_milestone(repositorio, m) for m in cliente.listar_milestones(repositorio)
+    ]
+    conexao.begin()
+    try:
+        gravados = substituir_milestones(conexao, repositorio, milestones)
+        conexao.commit()
+    except Exception:
+        conexao.rollback()
+        raise
+    return gravados
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -64,6 +82,8 @@ def main() -> None:
             for repositorio in config.repositorios:
                 gravados = coletar_repositorio(cliente, conexao, repositorio)
                 logger.info("%s: %d itens recebidos e gravados.", repositorio, gravados)
+                milestones = coletar_milestones(cliente, conexao, repositorio)
+                logger.info("%s: %d milestones.", repositorio, milestones)
                 regra = config.regra_deploy(repositorio)
                 deploys = coletar_deploys(cliente, conexao, repositorio, regra)
                 logger.info(
