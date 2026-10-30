@@ -218,3 +218,16 @@ def test_ordenar_milestones_abertos_pelo_prazo_mais_proximo():
         "Fechado antigo",
         "Fechado sem prazo",
     ]
+
+
+def test_inicio_padrao_nao_comeca_antes_do_item_mais_antigo(novo_item):
+    hoje = date(2026, 10, 30)
+    recentes = [novo_item(1, criado=datetime(2026, 10, 29, 21)), novo_item(2)]  # 01/10
+
+    assert vis.inicio_padrao(recentes, hoje, 90) == date(2026, 10, 1)
+    assert vis.inicio_padrao([novo_item(1, criado=datetime(2026, 1, 1))], hoje, 90) == date(
+        2026, 8, 2
+    )  # histórico longo: últimos 90 dias
+    assert vis.inicio_padrao([], hoje, 90) == date(2026, 8, 2)
+    futuro = [novo_item(1, criado=datetime(2026, 11, 5))]
+    assert vis.inicio_padrao(futuro, hoje, 90) == hoje  # nunca depois de hoje

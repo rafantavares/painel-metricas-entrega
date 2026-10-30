@@ -53,7 +53,7 @@ Python 3.12 · httpx · DuckDB · pandas · Streamlit · Plotly · pytest · Ruf
 | **M1 – Fundação** | Estrutura do projeto, CI, coletor de issues e PRs | ✅ |
 | **M2 – Métricas de fluxo** | Throughput, cycle time, WIP, aging | ✅ |
 | **M3 – DORA** | As quatro métricas DORA a partir de releases/workflows | ✅ |
-| **M4 – Dashboard** | Painel Streamlit com filtros por repo e período, deploy público | ⏳ |
+| **M4 – Dashboard** | Painel Streamlit com filtros por repo e período, atualização agendada (execução local; publicação opcional) | ✅ |
 | **M5 – Planejamento** | Burndown por milestone, previsibilidade, relatório semanal | ⏳ |
 
 O detalhamento está nas [issues](../../issues) e no [board do projeto](../../projects).
@@ -114,18 +114,36 @@ O painel lê o mesmo arquivo DuckDB do coletor e tem quatro páginas:
 
 Os filtros ficam na barra lateral (repositórios, período e tipo de item), e cada tabela pode ser exportada em CSV.
 
+### Capturas de tela
+
+O painel rodando localmente com os dados deste próprio repositório (coleta de 30/10/2026, com o CI na `main` como regra de deploy).
+
+**Visão geral**: indicadores de fluxo e resumo DORA.
+
 ![Visão geral do dashboard](docs/img/dashboard-visao-geral.png)
 
-## Atualização automática e publicação
+**Fluxo**: throughput, distribuição do cycle time, WIP diário e itens envelhecidos.
+
+![Página Fluxo](docs/img/dashboard-fluxo.png)
+
+**DORA**: as quatro métricas com a classificação de desempenho.
+
+![Página DORA](docs/img/dashboard-dora.png)
+
+**Planejamento**: burndown por milestone e previsibilidade.
+
+![Página Planejamento](docs/img/dashboard-planejamento.png)
+
+## Atualização automática
 
 - O workflow [`coleta.yml`](.github/workflows/coleta.yml) roda o coletor **a cada 6 horas** (ou manualmente, na aba Actions) e publica o banco na branch `dados`.
-- O **painel público** fica no Streamlit Community Cloud e baixa esse banco a cada hora: **https://painel-metricas-entrega.streamlit.app**
+- O painel roda localmente (`streamlit run app/dashboard.py`). Para usar os dados da coleta agendada em vez de coletar na sua máquina, defina `PAINEL_BANCO_URL` (ver `.env.example`).
 - Os repositórios analisados e as regras de deploy da coleta agendada são variáveis do repositório: `PAINEL_REPOSITORIOS` e `PAINEL_REGRAS_DEPLOY`, em *Settings → Secrets and variables → Actions → Variables*. Sem elas, a coleta usa este repositório, com o CI na `main` como deploy.
 
 Os motivos dessas escolhas estão no [ADR 0006](docs/adr/0006-atualizacao-e-publicacao.md).
 
 <details>
-<summary>Como publicar sua própria cópia</summary>
+<summary>Opcional: publicar uma cópia no Streamlit Community Cloud</summary>
 
 1. Faça um fork e rode o workflow **Coleta agendada** uma vez (aba *Actions → Coleta agendada → Run workflow*). Isso cria a branch `dados`.
 2. Em [share.streamlit.io](https://share.streamlit.io), crie um app com:

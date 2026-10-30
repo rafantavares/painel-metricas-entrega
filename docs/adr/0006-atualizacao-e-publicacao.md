@@ -34,3 +34,7 @@ O termo de abertura pede um dashboard **público** e **atualizado automaticament
 - ⚠️ Os dados podem ter até cerca de 7 horas de atraso (6 h entre coletas + 1 h de cache). Para um painel de tendências semanais, isso é aceitável.
 - ⚠️ Workflows agendados em repositórios sem atividade por 60 dias são desativados pelo GitHub. É preciso reativá-los manualmente na aba Actions.
 - ⚠️ O link `raw.githubusercontent.com` só funciona em repositório público. Se o repositório virar privado, será preciso trocar a forma de download (por exemplo, a API com token).
+
+## Atualização (30/10/2026)
+
+O painel deste repositório **não será publicado**. Ele roda localmente, e o README mostra capturas de tela da execução com os dados reais. O workflow de coleta e o download por `PAINEL_BANCO_URL` continuam valendo: a coleta agendada mantém a branch `dados` atualizada, e qualquer pessoa pode apontar o painel local, ou uma cópia publicada, para esse arquivo. Essa decisão muda o critério de sucesso "Dashboard público acessível e atualizado automaticamente" do termo de abertura, que deve ser revisto.

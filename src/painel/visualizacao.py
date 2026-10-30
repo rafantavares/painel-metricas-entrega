@@ -7,7 +7,7 @@ gráfico, tabela ou CSV no painel.
 
 from collections import Counter
 from collections.abc import Iterable, Sequence
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 
@@ -29,6 +29,16 @@ NOMES_TIPO = {"issue": "Issue", "pull_request": "Pull request"}
 
 def _filtrar_tipo(itens: Iterable[Item], tipo: str | None) -> list[Item]:
     return [item for item in itens if tipo is None or item.tipo == tipo]
+
+
+def inicio_padrao(itens: Iterable[Item], hoje: date, dias: int) -> date:
+    """Início do período padrão: os últimos `dias` dias, sem começar antes do item mais antigo.
+
+    Evita gráficos quase vazios quando o histórico coletado é mais curto que o período.
+    """
+    janela = hoje - timedelta(days=dias - 1)
+    mais_antigo = min((item.criado_em.date() for item in itens), default=janela)
+    return max(janela, min(mais_antigo, hoje))
 
 
 def tabela_throughput(
