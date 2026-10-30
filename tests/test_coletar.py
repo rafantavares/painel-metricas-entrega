@@ -3,8 +3,16 @@ from datetime import datetime
 import httpx
 import pytest
 
-from painel.coleta.armazenamento import conectar, ler_ultima_atualizacao
+from painel.coleta.armazenamento import (
+    conectar,
+    gravar_deploys,
+    ler_deploys,
+    ler_itens,
+    ler_ultima_atualizacao,
+    listar_repositorios,
+)
 from painel.coleta.github import ClienteGitHub
+from painel.coleta.normalizacao import Deploy
 from painel.coletar import coletar_repositorio
 
 REPO = "dono/repo"
@@ -121,3 +129,22 @@ def test_banco_em_arquivo_persiste_entre_conexoes(tmp_path, item_api):
     conexao = conectar(caminho)
     assert contar(conexao) == 1
     conexao.close()
+
+
+def test_leitura_dos_itens_e_deploys_gravados(conexao, item_api):
+    api = ApiFalsa([item_api(1, labels=("bug", "metricas")), item_api(2, pr=True)])
+    cliente = ClienteGitHub(transporte=httpx.MockTransport(api))
+    coletar_repositorio(cliente, conexao, "dono/um")
+    coletar_repositorio(cliente, conexao, "dono/dois")
+    gravar_deploys(conexao, [Deploy("dono/um", "release", "v1", None, datetime(2026, 10, 5))])
+
+    assert listar_repositorios(conexao) == ["dono/dois", "dono/um"]
+    itens = ler_itens(conexao, ["dono/um"])
+    assert [(i.repositorio, i.numero, i.tipo) for i in itens] == [
+        ("dono/um", 1, "issue"),
+        ("dono/um", 2, "pull_request"),
+    ]
+    assert itens[0].labels == ("bug", "metricas")
+    assert len(ler_itens(conexao)) == 4
+    assert [d.identificador for d in ler_deploys(conexao, ["dono/um"])] == ["v1"]
+    assert ler_deploys(conexao, ["dono/dois"]) == []

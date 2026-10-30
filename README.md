@@ -98,7 +98,21 @@ pytest                 # testes
 
 Os mesmos comandos rodam no [CI](.github/workflows/ci.yml) a cada push na `main` e em todo pull request.
 
-> O dashboard (`streamlit run app/painel.py`) chega no milestone M4.
+### Abrir o dashboard
+
+```bash
+streamlit run app/dashboard.py
+```
+
+O painel lê o mesmo arquivo DuckDB do coletor e tem três páginas:
+
+- **Visão geral**: itens concluídos, throughput, cycle time, WIP, itens envelhecidos e o resumo DORA por repositório;
+- **Fluxo**: throughput semanal, distribuição do cycle time, WIP diário e lista de itens envelhecidos;
+- **DORA**: as quatro métricas por repositório, com a classificação de desempenho e os deploys por semana.
+
+Os filtros ficam na barra lateral (repositórios, período e tipo de item), e cada tabela pode ser exportada em CSV.
+
+![Visão geral do dashboard](docs/img/dashboard-visao-geral.png)
 
 ## Gestão do projeto
 
