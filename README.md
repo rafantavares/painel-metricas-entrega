@@ -54,7 +54,7 @@ Python 3.12 · httpx · DuckDB · pandas · Streamlit · Plotly · pytest · Ruf
 | **M2 – Métricas de fluxo** | Throughput, cycle time, WIP, aging | ✅ |
 | **M3 – DORA** | As quatro métricas DORA a partir de releases/workflows | ✅ |
 | **M4 – Dashboard** | Painel Streamlit com filtros por repo e período, atualização agendada (execução local; publicação opcional) | ✅ |
-| **M5 – Planejamento** | Burndown por milestone, previsibilidade, relatório semanal | ⏳ |
+| **M5 – Planejamento** | Burndown por milestone, previsibilidade e primeira retrospectiva | ✅ |
 
 O detalhamento está nas [issues](../../issues) e no [board do projeto](../../projects).
 
