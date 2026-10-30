@@ -49,6 +49,7 @@ def _novo_item(
     tipo: str = "issue",
     titulo: str | None = None,
     labels: tuple[str, ...] = (),
+    milestone: str | None = None,
 ) -> Item:
     """Item já normalizado; o estado acompanha `fechado` quando não é informado."""
     return Item(
@@ -62,7 +63,7 @@ def _novo_item(
         fechado_em=fechado,
         mesclado_em=mesclado,
         labels=labels,
-        milestone=None,
+        milestone=milestone,
     )
 
 
