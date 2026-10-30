@@ -99,12 +99,19 @@ class ClienteGitHub:
 
         raise ErroGitHub(f"Desistindo de {url} após {self._max_tentativas} tentativas.")
 
-    def paginar(self, url: str, params: dict[str, Any] | None = None) -> Iterator[dict[str, Any]]:
-        """Percorre todas as páginas de um endpoint de listagem seguindo o cabeçalho `Link`."""
+    def paginar(
+        self, url: str, params: dict[str, Any] | None = None, chave: str | None = None
+    ) -> Iterator[dict[str, Any]]:
+        """Percorre todas as páginas de um endpoint de listagem seguindo o cabeçalho `Link`.
+
+        `chave` indica onde está a lista quando a resposta é um objeto
+        (ex.: `workflow_runs`), e não uma lista direta.
+        """
         proxima: str | None = url
         while proxima:
             resposta = self.requisitar(proxima, params)
-            yield from resposta.json()
+            dados = resposta.json()
+            yield from (dados[chave] if chave else dados)
             proxima = resposta.links.get("next", {}).get("url")
             params = None  # a URL `next` já traz os parâmetros
 
@@ -122,7 +129,39 @@ class ClienteGitHub:
             "per_page": 100,
         }
         if desde is not None:
-            if desde.tzinfo is None:  # datas sem fuso são tratadas como UTC
-                desde = desde.replace(tzinfo=UTC)
-            params["since"] = desde.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+            params["since"] = _formatar_data(desde)
         yield from self.paginar(f"/repos/{repositorio}/issues", params)
+
+    def listar_releases(self, repositorio: str) -> Iterator[dict[str, Any]]:
+        """Lista as releases do repositório, incluindo rascunhos e pré-releases."""
+        yield from self.paginar(f"/repos/{repositorio}/releases", {"per_page": 100})
+
+    def listar_tags(self, repositorio: str) -> Iterator[dict[str, Any]]:
+        """Lista as tags do repositório (nome e SHA do commit, sem data)."""
+        yield from self.paginar(f"/repos/{repositorio}/tags", {"per_page": 100})
+
+    def obter_commit(self, repositorio: str, sha: str) -> dict[str, Any]:
+        """Detalhes de um commit, usados para datar uma tag."""
+        return self.requisitar(f"/repos/{repositorio}/commits/{sha}").json()
+
+    def listar_execucoes_workflow(
+        self,
+        repositorio: str,
+        workflow: str,
+        branch: str,
+        desde: datetime | None = None,
+    ) -> Iterator[dict[str, Any]]:
+        """Lista as execuções bem-sucedidas de um workflow na branch, opcionalmente `desde`."""
+        params: dict[str, Any] = {"branch": branch, "status": "success", "per_page": 100}
+        if desde is not None:
+            params["created"] = f">={_formatar_data(desde)}"
+        yield from self.paginar(
+            f"/repos/{repositorio}/actions/workflows/{workflow}/runs", params, chave="workflow_runs"
+        )
+
+
+def _formatar_data(data: datetime) -> str:
+    """Data no formato ISO 8601 em UTC aceito pela API. Datas sem fuso são tratadas como UTC."""
+    if data.tzinfo is None:
+        data = data.replace(tzinfo=UTC)
+    return data.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
