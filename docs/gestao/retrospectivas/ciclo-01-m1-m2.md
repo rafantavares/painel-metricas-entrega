@@ -1,8 +1,6 @@
 # Retrospectiva — Ciclo 1 (29/10 a 30/10)
 
 > Milestones **M1 – Fundação** e **M2 – Métricas de fluxo**. Os números foram calculados com as funções do próprio painel (`painel.metricas`), sobre a coleta de 30/10/2026 01:50 UTC, usando o CI na `main` como regra de deploy. Os horários estão em UTC.
->
-> *Rascunho preparado a partir dos dados do painel e do histórico das PRs: revise as percepções e as ações antes de considerá-lo final.*
 
 ## Números do ciclo
 | Indicador | Valor |
@@ -33,12 +31,12 @@
 |---|---|---|
 | Ativar *Automatically delete head branches* (Settings → General) e apagar as branches já mescladas | Rafael | 06/11/2026 |
 | Cancelar execuções antigas do CI só em PRs, não na `main` (`cancel-in-progress: ${{ github.event_name == 'pull_request' }}`) | Rafael | 06/11/2026 |
-| Concluir a publicação do painel (coleta manual inicial + app no Streamlit Community Cloud) para fechar o M4 | Rafael | 06/12/2026 |
+| ~~Concluir a publicação do painel para fechar o M4~~ — substituída: o painel não será publicado e o M4 foi fechado com execução local e capturas no README (ADR 0006) | Rafael | Concluída em 30/10/2026 |
 | Avaliar registrar o início real do trabalho (status no GitHub Projects) para medir o cycle time sem a aproximação da criação | Rafael | Próxima retrospectiva |
 
 ## Riscos atualizados
 - **Limite da API interromper a coleta** — *baixou*. A coleta incremental sem token coube com folga no limite de 60 requisições/hora para um repositório pequeno. Com o token do workflow, o limite sobe.
 - **Dados de deploy inconsistentes** — *mitigado* pela regra configurável (ADR 0004). *Novo ponto:* o cancelamento de execuções do CI afeta a regra `workflow`, como mostrado acima.
 - **Escopo crescer além do prazo** — *baixou*. M1 e M2 terminaram 10 e 19 dias antes dos prazos.
-- **Novo: publicação depende de passos manuais** (Streamlit Community Cloud e a primeira coleta). Até eles serem feitos, o link público do README não funciona.
+- **Publicação dependia de passos manuais** — *encerrado*. O painel não será publicado; ele roda localmente e é ilustrado por capturas no README (ADR 0006 e termo de abertura revisado).
 - **Novo: poucos dados.** Com 2 dias de histórico, as médias e classificações (DORA "elite") são frágeis. Reavaliar com algumas semanas de coleta agendada.

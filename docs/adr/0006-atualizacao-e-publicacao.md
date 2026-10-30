@@ -37,4 +37,4 @@ O termo de abertura pede um dashboard **público** e **atualizado automaticament
 
 ## Atualização (30/10/2026)
 
-O painel deste repositório **não será publicado**. Ele roda localmente, e o README mostra capturas de tela da execução com os dados reais. O workflow de coleta e o download por `PAINEL_BANCO_URL` continuam valendo: a coleta agendada mantém a branch `dados` atualizada, e qualquer pessoa pode apontar o painel local, ou uma cópia publicada, para esse arquivo. Essa decisão muda o critério de sucesso "Dashboard público acessível e atualizado automaticamente" do termo de abertura, que deve ser revisto.
+O painel deste repositório **não será publicado**. Ele roda localmente, e o README mostra capturas de tela da execução com os dados reais. O workflow de coleta e o download por `PAINEL_BANCO_URL` continuam valendo: a coleta agendada mantém a branch `dados` atualizada, e qualquer pessoa pode apontar o painel local, ou uma cópia publicada, para esse arquivo. O termo de abertura foi revisto para refletir essa decisão (objetivo, marco M4 e critério de sucesso; ver o histórico de revisões do termo).
