@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from painel.config import carregar_configuracao
+from painel.config import RegraDeploy, carregar_configuracao, ler_regra_deploy
 
-VARIAVEIS = ("GITHUB_TOKEN", "PAINEL_REPOSITORIOS", "PAINEL_BANCO")
+VARIAVEIS = ("GITHUB_TOKEN", "PAINEL_REPOSITORIOS", "PAINEL_BANCO", "PAINEL_REGRAS_DEPLOY")
 
 
 @pytest.fixture(autouse=True)
@@ -51,4 +51,57 @@ def test_repositorio_invalido(monkeypatch, valor):
     monkeypatch.setenv("PAINEL_REPOSITORIOS", valor)
 
     with pytest.raises(ValueError, match="dono/repo"):
+        carregar_configuracao(arquivo_env=None)
+
+
+# --- Regras de deploy -------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("texto", "esperado"),
+    [
+        ("release", RegraDeploy("release")),
+        ("tag", RegraDeploy("tag", filtro="*")),
+        ("tag:v*", RegraDeploy("tag", filtro="v*")),
+        ("workflow:deploy.yml", RegraDeploy("workflow", filtro="deploy.yml", branch="main")),
+        (
+            " workflow: cd.yml @ producao ",
+            RegraDeploy("workflow", filtro="cd.yml", branch="producao"),
+        ),
+    ],
+)
+def test_ler_regra_deploy(texto, esperado):
+    assert ler_regra_deploy(texto) == esperado
+
+
+@pytest.mark.parametrize(
+    "texto", ["", "deploy", "release:x", "workflow", "workflow:", "workflow:@main"]
+)
+def test_regra_deploy_invalida(texto):
+    with pytest.raises(ValueError, match="Regra de deploy inválida"):
+        ler_regra_deploy(texto)
+
+
+@pytest.mark.parametrize(
+    "texto", ["release", "tag:v*", "workflow:deploy.yml@main", "workflow:cd.yml@producao"]
+)
+def test_regra_deploy_ida_e_volta_pelo_texto(texto):
+    assert str(ler_regra_deploy(texto)) == texto
+
+
+def test_regras_deploy_por_repositorio_com_padrao_release(monkeypatch):
+    monkeypatch.setenv("PAINEL_REGRAS_DEPLOY", "dono/api=workflow:deploy.yml; dono/app = tag:v* ;")
+
+    config = carregar_configuracao(arquivo_env=None)
+
+    assert config.regra_deploy("dono/api") == RegraDeploy("workflow", filtro="deploy.yml")
+    assert config.regra_deploy("dono/app") == RegraDeploy("tag", filtro="v*")
+    assert config.regra_deploy("dono/outro") == RegraDeploy("release")
+
+
+@pytest.mark.parametrize("valor", ["release", "repo-invalido=release", "dono/api=invalida"])
+def test_regras_deploy_mal_formadas(monkeypatch, valor):
+    monkeypatch.setenv("PAINEL_REGRAS_DEPLOY", valor)
+
+    with pytest.raises(ValueError):
         carregar_configuracao(arquivo_env=None)

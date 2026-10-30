@@ -156,3 +156,56 @@ def test_since_usa_utc_mesmo_com_fuso_local():
     list(criar_cliente(tratador).listar_issues("dono/repo", datetime(2026, 1, 1, tzinfo=UTC)))
 
     assert requisicoes[0].url.params["since"] == "2026-01-01T00:00:00Z"
+
+
+def test_lista_execucoes_de_workflow_com_filtros_e_chave_da_resposta():
+    requisicoes = []
+
+    def tratador(requisicao):
+        requisicoes.append(requisicao)
+        return httpx.Response(200, json={"total_count": 1, "workflow_runs": [{"id": 7}]})
+
+    cliente = criar_cliente(tratador)
+    execucoes = list(
+        cliente.listar_execucoes_workflow("dono/repo", "deploy.yml", "main", datetime(2026, 10, 1))
+    )
+
+    assert execucoes == [{"id": 7}]
+    (requisicao,) = requisicoes
+    assert requisicao.url.path == "/repos/dono/repo/actions/workflows/deploy.yml/runs"
+    assert requisicao.url.params["branch"] == "main"
+    assert requisicao.url.params["status"] == "success"
+    assert requisicao.url.params["created"] == ">=2026-10-01T00:00:00Z"
+
+
+def test_execucoes_sem_desde_nao_enviam_filtro_de_data():
+    requisicoes = []
+
+    def tratador(requisicao):
+        requisicoes.append(requisicao)
+        return httpx.Response(200, json={"workflow_runs": []})
+
+    list(criar_cliente(tratador).listar_execucoes_workflow("dono/repo", "cd.yml", "producao"))
+
+    assert "created" not in requisicoes[0].url.params
+
+
+def test_endpoints_de_releases_tags_e_commit():
+    caminhos = []
+
+    def tratador(requisicao):
+        caminhos.append(requisicao.url.path)
+        if requisicao.url.path.endswith("/commits/abc"):
+            return httpx.Response(200, json={"sha": "abc"})
+        return httpx.Response(200, json=[])
+
+    cliente = criar_cliente(tratador)
+    list(cliente.listar_releases("dono/repo"))
+    list(cliente.listar_tags("dono/repo"))
+    assert cliente.obter_commit("dono/repo", "abc") == {"sha": "abc"}
+
+    assert caminhos == [
+        "/repos/dono/repo/releases",
+        "/repos/dono/repo/tags",
+        "/repos/dono/repo/commits/abc",
+    ]

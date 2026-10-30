@@ -6,7 +6,7 @@ from pathlib import Path
 
 import duckdb
 
-from painel.coleta.normalizacao import Item
+from painel.coleta.normalizacao import Deploy, Item
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS bruta_itens (
@@ -22,6 +22,15 @@ CREATE TABLE IF NOT EXISTS bruta_itens (
     labels        VARCHAR[] NOT NULL,
     milestone     VARCHAR,
     PRIMARY KEY (repositorio, numero)
+);
+
+CREATE TABLE IF NOT EXISTS bruta_deploys (
+    repositorio    VARCHAR   NOT NULL,
+    regra          VARCHAR   NOT NULL,
+    identificador  VARCHAR   NOT NULL,
+    sha            VARCHAR,
+    implantado_em  TIMESTAMP NOT NULL,
+    PRIMARY KEY (repositorio, regra, identificador)
 );
 
 CREATE TABLE IF NOT EXISTS controle_coleta (
@@ -85,3 +94,43 @@ def registrar_coleta(
         "INSERT OR REPLACE INTO controle_coleta VALUES (?, ?, ?)",
         [repositorio, ultima_atualizacao, executado_em],
     )
+
+
+def gravar_deploys(conexao: duckdb.DuckDBPyConnection, deploys: Iterable[Deploy]) -> int:
+    """Insere ou atualiza deploys pela chave (repositório, regra, identificador)."""
+    linhas = [(d.repositorio, d.regra, d.identificador, d.sha, d.implantado_em) for d in deploys]
+    if linhas:
+        conexao.executemany("INSERT OR REPLACE INTO bruta_deploys VALUES (?, ?, ?, ?, ?)", linhas)
+    return len(linhas)
+
+
+def remover_deploys_de_outras_regras(
+    conexao: duckdb.DuckDBPyConnection, repositorio: str, regra: str
+) -> int:
+    """Apaga deploys do repositório identificados por uma regra diferente da atual."""
+    removidos = conexao.execute(
+        "DELETE FROM bruta_deploys WHERE repositorio = ? AND regra <> ? RETURNING identificador",
+        [repositorio, regra],
+    ).fetchall()
+    return len(removidos)
+
+
+def ler_identificadores_deploy(
+    conexao: duckdb.DuckDBPyConnection, repositorio: str, regra: str
+) -> set[str]:
+    """Identificadores (tag, release ou execução) já gravados para o repositório e regra."""
+    linhas = conexao.execute(
+        "SELECT identificador FROM bruta_deploys WHERE repositorio = ? AND regra = ?",
+        [repositorio, regra],
+    ).fetchall()
+    return {linha[0] for linha in linhas}
+
+
+def ler_ultimo_deploy(
+    conexao: duckdb.DuckDBPyConnection, repositorio: str, regra: str
+) -> datetime | None:
+    """Data do deploy mais recente já gravado, ou `None` se ainda não há nenhum."""
+    return conexao.execute(
+        "SELECT max(implantado_em) FROM bruta_deploys WHERE repositorio = ? AND regra = ?",
+        [repositorio, regra],
+    ).fetchone()[0]
