@@ -9,12 +9,14 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import duckdb
+import httpx
 import streamlit as st
 
 import comum
 from painel import visualizacao as vis
 from painel.coleta.armazenamento import ler_deploys, ler_itens, listar_repositorios
 from painel.config import carregar_configuracao
+from painel.publicacao import IDADE_MAXIMA_PADRAO, baixar_banco
 
 PERIODO_PADRAO_DIAS = 90
 
@@ -28,9 +30,22 @@ def carregar_dados(caminho: str):
         return listar_repositorios(conexao), ler_itens(conexao), ler_deploys(conexao)
 
 
+@st.cache_resource(ttl=IDADE_MAXIMA_PADRAO, show_spinner="Baixando os dados publicados…")
+def atualizar_banco(url: str, caminho: str) -> None:
+    """Baixa o banco publicado pelo workflow de coleta, no máximo uma vez por hora."""
+    try:
+        if baixar_banco(url, Path(caminho)):
+            carregar_dados.clear()
+    except httpx.HTTPError as erro:
+        st.error(f"Não foi possível baixar os dados publicados: {erro}")
+        st.stop()
+
+
 # --- Dados e filtros --------------------------------------------------------------------
 
 config = carregar_configuracao()
+if config.url_banco:
+    atualizar_banco(config.url_banco, str(config.caminho_banco))
 if not Path(config.caminho_banco).exists():
     st.title("📊 Painel de Métricas de Entrega")
     st.info(

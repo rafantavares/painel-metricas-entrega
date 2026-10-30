@@ -40,6 +40,7 @@ class Configuracao:
     repositorios: tuple[str, ...]
     caminho_banco: Path
     regras_deploy: dict[str, RegraDeploy] = field(default_factory=dict)
+    url_banco: str | None = None
 
     def regra_deploy(self, repositorio: str) -> RegraDeploy:
         """Regra configurada para o repositório, ou a padrão (`release`)."""
@@ -102,4 +103,5 @@ def carregar_configuracao(arquivo_env: str | Path | None = ".env") -> Configurac
         repositorios=_ler_repositorios(os.getenv("PAINEL_REPOSITORIOS", "")),
         caminho_banco=Path(os.getenv("PAINEL_BANCO", "data/painel.duckdb")),
         regras_deploy=_ler_regras_deploy(os.getenv("PAINEL_REGRAS_DEPLOY", "")),
+        url_banco=os.getenv("PAINEL_BANCO_URL") or None,
     )

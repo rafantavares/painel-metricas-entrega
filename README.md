@@ -114,6 +114,29 @@ Os filtros ficam na barra lateral (repositórios, período e tipo de item), e ca
 
 ![Visão geral do dashboard](docs/img/dashboard-visao-geral.png)
 
+## Atualização automática e publicação
+
+- O workflow [`coleta.yml`](.github/workflows/coleta.yml) roda o coletor **a cada 6 horas** (ou manualmente, na aba Actions) e publica o banco na branch `dados`.
+- O **painel público** fica no Streamlit Community Cloud e baixa esse banco a cada hora: **https://painel-metricas-entrega.streamlit.app**
+- Os repositórios analisados e as regras de deploy da coleta agendada são variáveis do repositório: `PAINEL_REPOSITORIOS` e `PAINEL_REGRAS_DEPLOY`, em *Settings → Secrets and variables → Actions → Variables*. Sem elas, a coleta usa este repositório, com o CI na `main` como deploy.
+
+Os motivos dessas escolhas estão no [ADR 0006](docs/adr/0006-atualizacao-e-publicacao.md).
+
+<details>
+<summary>Como publicar sua própria cópia</summary>
+
+1. Faça um fork e rode o workflow **Coleta agendada** uma vez (aba *Actions → Coleta agendada → Run workflow*). Isso cria a branch `dados`.
+2. Em [share.streamlit.io](https://share.streamlit.io), crie um app com:
+   - repositório: o seu fork, branch `main`;
+   - arquivo principal: `app/dashboard.py`;
+   - em *Advanced settings*: Python 3.12 e, em *Secrets*:
+     ```toml
+     PAINEL_BANCO_URL = "https://raw.githubusercontent.com/<seu-usuario>/painel-metricas-entrega/dados/painel.duckdb"
+     ```
+3. Opcional: escolha um subdomínio personalizado em *Settings → General* do app.
+
+</details>
+
 ## Gestão do projeto
 
 - [Termo de abertura](docs/gestao/termo-de-abertura.md) — objetivo, escopo, riscos e critérios de sucesso
