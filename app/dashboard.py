@@ -5,7 +5,7 @@ entrega os dados às páginas em `app/paginas/`. A preparação das tabelas est�
 `painel.visualizacao`, testada sem o Streamlit.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 import duckdb
@@ -80,7 +80,7 @@ with st.sidebar:
     )
     periodo = st.date_input(
         "Período",
-        value=(hoje - timedelta(days=PERIODO_PADRAO_DIAS - 1), hoje),
+        value=(vis.inicio_padrao(todos_itens, hoje, PERIODO_PADRAO_DIAS), hoje),
         max_value=hoje,
         format="DD/MM/YYYY",
     )
