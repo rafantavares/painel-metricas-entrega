@@ -11,6 +11,7 @@ from painel.coleta.armazenamento import (
     ler_ultima_atualizacao,
     registrar_coleta,
 )
+from painel.coleta.deploys import coletar_deploys
 from painel.coleta.github import ClienteGitHub
 from painel.coleta.normalizacao import normalizar_item
 from painel.config import carregar_configuracao
@@ -63,6 +64,11 @@ def main() -> None:
             for repositorio in config.repositorios:
                 gravados = coletar_repositorio(cliente, conexao, repositorio)
                 logger.info("%s: %d itens recebidos e gravados.", repositorio, gravados)
+                regra = config.regra_deploy(repositorio)
+                deploys = coletar_deploys(cliente, conexao, repositorio, regra)
+                logger.info(
+                    "%s: %d deploys (%s) recebidos e gravados.", repositorio, deploys, regra
+                )
     finally:
         conexao.close()
 
