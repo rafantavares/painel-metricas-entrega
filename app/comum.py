@@ -79,6 +79,8 @@ def barras_semanais(
     rotulos = {"semana": "Semana de", y: rotulo_y} | (labels or {})
     figura = px.bar(dados, x="semana", y=y, labels=rotulos, **opcoes)
     figura.update_xaxes(type="category")
+    if dados["semana"].nunique() < 4:
+        figura.update_traces(width=0.3)  # com poucas semanas, a barra não ocupa o gráfico todo
     return figura
 
 

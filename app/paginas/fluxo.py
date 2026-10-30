@@ -45,10 +45,17 @@ comum.baixar_csv(concluidos, "cycle-time")
 
 st.subheader("WIP diário")
 wip = vis.tabela_wip(ctx.itens, ctx.inicio, ctx.fim, ctx.tipo)
-st.plotly_chart(
-    px.line(wip, x="dia", y="em_andamento", labels={"dia": "Dia", "em_andamento": "Em andamento"}),
-    width="stretch",
+grafico_wip = px.line(
+    wip,
+    x="dia",
+    y="em_andamento",
+    markers=True,
+    labels={"dia": "Dia", "em_andamento": "Em andamento"},
 )
+# Um rótulo por dia (no máximo ~15), sem horas no eixo quando o período é curto.
+grafico_wip.update_xaxes(tickformat="%d/%m", dtick=86_400_000 * max(1, len(wip) // 15))
+grafico_wip.update_yaxes(rangemode="tozero")
+st.plotly_chart(grafico_wip, width="stretch")
 comum.baixar_csv(wip, "wip")
 
 st.subheader("Itens envelhecidos")
