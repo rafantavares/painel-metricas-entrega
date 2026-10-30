@@ -14,7 +14,7 @@ Times de software geram muitos dados no GitHub, mas raramente os usam para plane
 
 ## 2. Objetivo
 
-Entregar um painel público que calcule e exiba métricas de fluxo e DORA para um ou mais repositórios do GitHub, atualizado automaticamente.
+Entregar um painel que calcule e exiba métricas de fluxo e DORA para um ou mais repositórios do GitHub, com dados atualizados automaticamente.
 
 ## 3. Escopo
 
@@ -36,7 +36,7 @@ Entregar um painel público que calcule e exiba métricas de fluxo e DORA para u
 | M1 | Fundação: estrutura, CI e coletor | 08/11/2026 |
 | M2 | Métricas de fluxo | 18/11/2026 |
 | M3 | Métricas DORA | 28/11/2026 |
-| M4 | Dashboard publicado | 06/12/2026 |
+| M4 | Dashboard e atualização agendada | 06/12/2026 |
 | M5 | Burndown e previsibilidade | 13/12/2026 |
 
 ## 5. Partes interessadas
@@ -50,7 +50,7 @@ Entregar um painel público que calcule e exiba métricas de fluxo e DORA para u
 
 - A API do GitHub tem limite de requisições; a coleta precisa ser incremental.
 - Projeto conduzido por uma pessoa, em paralelo à graduação.
-- Infraestrutura gratuita (GitHub Actions e hospedagem gratuita do dashboard).
+- Infraestrutura gratuita (GitHub Actions).
 
 ## 7. Riscos
 
@@ -63,7 +63,13 @@ Entregar um painel público que calcule e exiba métricas de fluxo e DORA para u
 
 ## 8. Critérios de sucesso
 
-- Dashboard público acessível e atualizado automaticamente
+- Dashboard executável localmente, com dados atualizados automaticamente pela coleta agendada e capturas de tela no README
 - As 4 métricas DORA e as métricas de fluxo calculadas e testadas
 - Cobertura de testes ≥ 80% no módulo de métricas
 - Documentação suficiente para outra pessoa rodar o projeto em menos de 10 minutos
+
+## Histórico de revisões
+
+| Data | Mudança | Motivo |
+|---|---|---|
+| 30/10/2026 | O dashboard deixa de ser publicado: objetivo, marco M4, restrições e critério de sucesso passam a tratar de execução local com dados atualizados automaticamente | Decisão do responsável de não divulgar um link público; o painel é demonstrado por capturas de tela no README ([ADR 0006](../adr/0006-atualizacao-e-publicacao.md)) |
