@@ -1,7 +1,7 @@
 """Conversão das respostas da API do GitHub em registros da camada bruta."""
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from fnmatch import fnmatchcase
 from typing import Any
 
@@ -32,6 +32,19 @@ class Deploy:
     identificador: str  # nome da release ou da tag, ou id da execução do workflow
     sha: str | None
     implantado_em: datetime
+
+
+@dataclass(frozen=True)
+class Milestone:
+    """Um milestone do GitHub, com o prazo (`due_on`) como data."""
+
+    repositorio: str
+    numero: int
+    titulo: str
+    estado: str
+    criado_em: datetime
+    prazo: date | None
+    fechado_em: datetime | None
 
 
 def converter_data(valor: str | None) -> datetime | None:
@@ -103,4 +116,21 @@ def normalizar_execucao_workflow(
         identificador=str(dados["id"]),
         sha=dados.get("head_sha"),
         implantado_em=converter_data(dados["updated_at"]),  # fim da execução
+    )
+
+
+def normalizar_milestone(repositorio: str, dados: dict[str, Any]) -> Milestone:
+    """Extrai os campos usados no burndown e na previsibilidade.
+
+    O prazo é a data de `due_on` em UTC, que corresponde ao dia escolhido na interface.
+    """
+    prazo = converter_data(dados.get("due_on"))
+    return Milestone(
+        repositorio=repositorio,
+        numero=dados["number"],
+        titulo=dados["title"],
+        estado=dados["state"],
+        criado_em=converter_data(dados["created_at"]),
+        prazo=prazo.date() if prazo else None,
+        fechado_em=converter_data(dados.get("closed_at")),
     )

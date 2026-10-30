@@ -136,6 +136,12 @@ class ClienteGitHub:
         """Lista as releases do repositório, incluindo rascunhos e pré-releases."""
         yield from self.paginar(f"/repos/{repositorio}/releases", {"per_page": 100})
 
+    def listar_milestones(self, repositorio: str) -> Iterator[dict[str, Any]]:
+        """Lista os milestones do repositório, abertos e fechados."""
+        yield from self.paginar(
+            f"/repos/{repositorio}/milestones", {"state": "all", "per_page": 100}
+        )
+
     def listar_tags(self, repositorio: str) -> Iterator[dict[str, Any]]:
         """Lista as tags do repositório (nome e SHA do commit, sem data)."""
         yield from self.paginar(f"/repos/{repositorio}/tags", {"per_page": 100})
