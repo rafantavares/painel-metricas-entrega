@@ -1,11 +1,14 @@
 """Executa o dashboard com o `AppTest` do Streamlit, sem navegador."""
 
+import shutil
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import httpx
 import pytest
 from streamlit.testing.v1 import AppTest
 
+import painel.publicacao
 from painel.coleta.armazenamento import conectar, gravar_deploys, gravar_itens
 from painel.coleta.normalizacao import Deploy
 
@@ -93,3 +96,37 @@ def test_banco_vazio_orienta_a_rodar_o_coletor(tmp_path, monkeypatch):
     app = rodar()
 
     assert "ainda não tem itens" in app.info[0].value
+
+
+def test_com_url_baixa_o_banco_publicado_antes_de_abrir(banco, tmp_path, monkeypatch):
+    destino = tmp_path / "baixado" / "painel.duckdb"
+    urls = []
+
+    def baixar_falso(url, caminho, *args, **kwargs):
+        urls.append(url)
+        caminho.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(banco, caminho)
+        return True
+
+    monkeypatch.setattr(painel.publicacao, "baixar_banco", baixar_falso)
+    monkeypatch.setenv("PAINEL_BANCO", str(destino))
+    monkeypatch.setenv("PAINEL_BANCO_URL", "https://exemplo/painel.duckdb")
+
+    app = rodar()
+
+    assert urls == ["https://exemplo/painel.duckdb"]
+    assert app.metric[0].value == "11"
+
+
+def test_falha_no_download_sem_copia_local_mostra_erro(tmp_path, monkeypatch):
+    def baixar_falho(url, caminho, *args, **kwargs):
+        raise httpx.ConnectError("sem rede")
+
+    monkeypatch.setattr(painel.publicacao, "baixar_banco", baixar_falho)
+    monkeypatch.setenv("PAINEL_BANCO", str(tmp_path / "painel.duckdb"))
+    monkeypatch.setenv("PAINEL_BANCO_URL", "https://exemplo/falha.duckdb")
+    monkeypatch.chdir(tmp_path)
+
+    app = rodar()
+
+    assert "Não foi possível baixar" in app.error[0].value

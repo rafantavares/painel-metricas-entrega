@@ -5,7 +5,13 @@ import pytest
 
 from painel.config import RegraDeploy, carregar_configuracao, ler_regra_deploy
 
-VARIAVEIS = ("GITHUB_TOKEN", "PAINEL_REPOSITORIOS", "PAINEL_BANCO", "PAINEL_REGRAS_DEPLOY")
+VARIAVEIS = (
+    "GITHUB_TOKEN",
+    "PAINEL_REPOSITORIOS",
+    "PAINEL_BANCO",
+    "PAINEL_REGRAS_DEPLOY",
+    "PAINEL_BANCO_URL",
+)
 
 
 @pytest.fixture(autouse=True)
@@ -105,3 +111,11 @@ def test_regras_deploy_mal_formadas(monkeypatch, valor):
 
     with pytest.raises(ValueError):
         carregar_configuracao(arquivo_env=None)
+
+
+def test_url_do_banco_publicado(monkeypatch):
+    assert carregar_configuracao(arquivo_env=None).url_banco is None
+
+    monkeypatch.setenv("PAINEL_BANCO_URL", "https://exemplo/painel.duckdb")
+
+    assert carregar_configuracao(arquivo_env=None).url_banco == "https://exemplo/painel.duckdb"
